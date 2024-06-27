@@ -16,6 +16,8 @@ public class AppUser {
     private String login;
     @Column(nullable = false)
     private String password;
+    @Column(nullable = false)
+    private Boolean isConfirm;
 
     @OneToMany
     @JoinTable(
@@ -24,6 +26,17 @@ public class AppUser {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles;
+
+    public AppUser(String email, String login, String password, Boolean isConfirm, Set<Role> roles) {
+        this.email = email;
+        this.login = login;
+        this.password = password;
+        this.isConfirm = isConfirm;
+        this.roles = roles;
+    }
+
+    public AppUser() {
+    }
 
     public Long getId() {
         return id;
@@ -63,5 +76,13 @@ public class AppUser {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public Boolean getIsConfirm() {
+        return isConfirm;
+    }
+
+    public void setIsConfirm(Boolean isConfirm) {
+        this.isConfirm = isConfirm;
     }
 }
