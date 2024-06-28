@@ -13,7 +13,9 @@ create table app_user
     email      varchar(255)          not null
         constraint app_user_email_pk
             unique,
-    login      varchar(255)          not null,
+    login      varchar(255)          not null
+        constraint app_user_login_pk
+            unique,
     password   varchar(255)          not null,
     is_confirm boolean default false not null
 );
