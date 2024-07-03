@@ -28,7 +28,7 @@ public class MailService {
             url = url.substring(0, url.lastIndexOf("/"));
         }
 
-        String token = tokenService.generateVerificationToken(user);
+        String token = tokenService.generateToken(user.email());
 
         String subject = "Подтверждение регистрации";
         String confirmationUrl = url + "/confirmation?token=" + token;
@@ -40,5 +40,24 @@ public class MailService {
         email.setText(message);
 
         mailSender.send(email);
+    }
+
+    public void sendPasswordResetEmail(String email) {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+        String url = attributes.getRequest().getRequestURL().toString();
+
+        String token = tokenService.generateToken(email);
+
+        String subject = "Запрос на сброс пароля";
+        String confirmationUrl = url + "/reset-password?token=" + token;
+        String text = "Чтобы сбросить пароль, нажмите ссылку ниже:\n" + confirmationUrl;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject(subject);
+        message.setText(text);
+
+        mailSender.send(message);
     }
 }

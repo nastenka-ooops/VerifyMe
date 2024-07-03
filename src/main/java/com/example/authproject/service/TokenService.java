@@ -1,6 +1,5 @@
 package com.example.authproject.service;
 
-import com.example.authproject.dto.RegistrationRequest;
 import com.example.authproject.entity.AppUser;
 import com.example.authproject.entity.RefreshToken;
 import com.example.authproject.exception.InvalidRegistrationRequestException;
@@ -9,14 +8,12 @@ import com.example.authproject.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -39,19 +36,18 @@ public class TokenService {
         this.authenticationManager = authenticationManager;
     }
 
-    public String generateVerificationToken(RegistrationRequest user) {
+    public String generateToken(String email) {
         Instant now = Instant.now();
         JwtClaimsSet claimsSet = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
                 .expiresAt(now.plus(3, ChronoUnit.MINUTES))
-                .subject(user.email())
+                .subject(email)
                 .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claimsSet)).getTokenValue();
-
     }
 
-    public Jwt decodeVerificationToken(String token) {
+    public Jwt decodeToken(String token) {
         try {
             return jwtDecoder.decode(token);
         } catch (JwtException e) {

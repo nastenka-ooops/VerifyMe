@@ -2,6 +2,7 @@ package com.example.authproject.service;
 
 import com.example.authproject.dto.LoginRequest;
 import com.example.authproject.dto.LoginResponse;
+import com.example.authproject.dto.PasswordUpdateRequest;
 import com.example.authproject.dto.RegistrationRequest;
 import com.example.authproject.entity.AppUser;
 import com.example.authproject.entity.Role;
@@ -14,6 +15,7 @@ import com.example.authproject.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
@@ -77,8 +79,8 @@ public class AuthenticationService {
     }
 
     public LoginResponse loginUser(LoginRequest loginRequest) {
-
         Optional<AppUser> user = userRepository.findByLoginIgnoreCase(loginRequest.login());
+
         if (user.isEmpty()) {
             throw new BadCredentialsException("Invalid username or password");
         }
@@ -100,7 +102,7 @@ public class AuthenticationService {
     }
 
     public String confirmEmail(String token) {
-        Jwt decodedToken = tokenService.decodeVerificationToken(token);
+        Jwt decodedToken = tokenService.decodeToken(token);
         if (decodedToken != null) {
             String email = decodedToken.getSubject();
             AppUser user = userService.findByEmail(email);
@@ -121,6 +123,37 @@ public class AuthenticationService {
 
         if (bindingResult.hasErrors()) {
             throw new InvalidRegistrationRequestException("Invalid registration request " + bindingResult.getAllErrors());
+        }
+    }
+
+    public void forgotPassword(String email) {
+        Optional<AppUser> user = userRepository.findByEmailIgnoreCase(email);
+        if(user.isEmpty()){
+            throw new UsernameNotFoundException("Email address not found.");
+        }
+
+        mailService.sendPasswordResetEmail(email);
+    }
+
+    public String updatePassword(String token, PasswordUpdateRequest request) {
+        Jwt decodedToken = tokenService.decodeToken(token);
+
+        if (!request.password().equals(request.confirmPassword())){
+            throw new PasswordMismatchException("Passwords do not match");
+        }
+
+        if (decodedToken != null) {
+            String email = decodedToken.getSubject();
+            AppUser user = userService.findByEmail(email);
+            if (user != null) {
+                user.setPassword(passwordEncoder.encode(request.password()));
+                userRepository.save(user);
+                return "Password updated! You can now log in.";
+            } else {
+                return "The user was not found";
+            }
+        } else {
+            return "Invalid or expired token.";
         }
     }
 
