@@ -1,6 +1,5 @@
 package com.example.authproject.service;
 
-import com.example.authproject.dto.LoginResponse;
 import com.example.authproject.dto.RegistrationRequest;
 import com.example.authproject.entity.AppUser;
 import com.example.authproject.entity.RefreshToken;
@@ -9,11 +8,6 @@ import com.example.authproject.repository.RefreshTokenRepository;
 import com.example.authproject.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.jwt.*;
@@ -65,32 +59,24 @@ public class TokenService {
         }
     }
 
-
-    public String generateAccessToken(Authentication authentication) {
+    public String generateAccessToken(AppUser user) {
         Instant now = Instant.now();
-        String scope = authentication.getAuthorities().stream()
+        String scope = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(" "));
 
         JwtClaimsSet claimsSet = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
-                .subject(authentication.getName())
+                .subject(user.getUsername())
                 .claim("roles", scope)
                 .build();
 
         return jwtEncoder.encode(JwtEncoderParameters.from(claimsSet)).getTokenValue();
     }
 
-    public String generateRefreshToken(Authentication authentication) {
-
-        Optional<AppUser> user = userRepository.findByLoginIgnoreCase(authentication.getName());
-
-        if (user.isEmpty()) {
-            throw new UsernameNotFoundException("user not found");
-        }
-
-        RefreshToken refreshToken = new RefreshToken(UUID.randomUUID().toString(), user.get(), 100);
+    public String generateRefreshToken(AppUser user) {
+        RefreshToken refreshToken = new RefreshToken(UUID.randomUUID().toString(), user, 100);
 
         return refreshTokenRepository.save(refreshToken).getToken();
     }
@@ -111,19 +97,6 @@ public class TokenService {
 
         AppUser user = refreshToken.getUser();
 
-        try {
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(user.getLogin(), user.getPassword())
-            );
-
-            return generateAccessToken(authentication);
-
-        } catch (AuthenticationException e) {
-            if (e instanceof DisabledException) {
-                throw new DisabledException("Account has not been enabled");
-            } else {
-                throw new BadCredentialsException("Invalid username or password");
-            }
-        }
+        return generateAccessToken(user);
     }
 }
