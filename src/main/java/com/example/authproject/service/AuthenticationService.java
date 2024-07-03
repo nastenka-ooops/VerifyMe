@@ -68,7 +68,7 @@ public class AuthenticationService {
                 passwordEncoder.encode(registrationRequest.password()),
                 false, new HashSet<>());
 
-        Optional<Role> role = roleRepository.findByAuthority(RoleEnum.USER.ordinal());
+        Optional<Role> role = roleRepository.findByAuthority(RoleEnum.USER);
         role.ifPresent(value -> user.getRoles().add(value));
 
         userRepository.save(user);
