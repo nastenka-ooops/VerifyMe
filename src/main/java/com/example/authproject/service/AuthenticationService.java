@@ -10,8 +10,6 @@ import com.example.authproject.exception.InvalidRegistrationRequestException;
 import com.example.authproject.exception.PasswordMismatchException;
 import com.example.authproject.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
@@ -53,6 +51,10 @@ public class AuthenticationService {
     public void createUser(RegistrationRequest registrationRequest) {
         validateRegistrationRequest(registrationRequest);
 
+        if (loginExists(registrationRequest.email())) {
+            throw new EmailAlreadyTakenException("Login is already taken");
+        }
+
         if (emailExists(registrationRequest.email())) {
             throw new EmailAlreadyTakenException("Email is already taken");
         }
@@ -76,12 +78,11 @@ public class AuthenticationService {
                     new UsernamePasswordAuthenticationToken(loginRequest.login(), loginRequest.password())
             );
 
-            String token = tokenService.generateAccessToken(authentication);
-
-//            AppUser appUser = (AppUser) authentication.getPrincipal();
+            String accessToken = tokenService.generateAccessToken(authentication);
+            String refreshToken = tokenService.generateRefreshToken(authentication);
 
             return new LoginResponse(loginRequest.login(),
-                    token);
+                    accessToken, refreshToken);
 
         } catch (AuthenticationException e) {
             if (e instanceof DisabledException) {
@@ -96,9 +97,13 @@ public class AuthenticationService {
         return userRepository.findByEmailIgnoreCase(email).isPresent();
     }
 
+    public boolean loginExists(String login) {
+        return userRepository.findByLoginIgnoreCase(login).isPresent();
+    }
+
     public String confirmEmail(String token) {
         Jwt decodedToken = tokenService.decodeVerificationToken(token);
-        if (decodedToken!=null) {
+        if (decodedToken != null) {
             String email = decodedToken.getSubject();
             AppUser user = userService.findByEmail(email);
             if (user != null && !user.getIsConfirm()) {
@@ -120,4 +125,5 @@ public class AuthenticationService {
             throw new InvalidRegistrationRequestException("Invalid registration request " + bindingResult.getAllErrors());
         }
     }
+
 }

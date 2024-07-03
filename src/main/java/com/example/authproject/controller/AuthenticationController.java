@@ -5,6 +5,7 @@ import com.example.authproject.dto.LoginResponse;
 import com.example.authproject.dto.RegistrationRequest;
 import com.example.authproject.service.AuthenticationService;
 import com.example.authproject.service.MailService;
+import com.example.authproject.service.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -14,18 +15,18 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
+    private final TokenService tokenService;
     private final MailService mailService;
 
     @Autowired
-    public AuthenticationController(AuthenticationService authenticationService, MailService mailService) {
+    public AuthenticationController(AuthenticationService authenticationService, TokenService tokenService, MailService mailService) {
         this.authenticationService = authenticationService;
+        this.tokenService = tokenService;
         this.mailService = mailService;
     }
 
@@ -92,4 +93,15 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authenticationService.loginUser(loginRequest));
-    }}
+    }
+
+    @Operation(summary = "Refresh Token", description = "Refreshes the JWT access token using a valid refresh token.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Token refreshed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid refresh token")
+    })
+    @PostMapping("/refresh-token")
+    public ResponseEntity<String> refreshToken(@RequestBody String refreshToken){
+        return ResponseEntity.ok(tokenService.refreshToken(refreshToken));
+    }
+}

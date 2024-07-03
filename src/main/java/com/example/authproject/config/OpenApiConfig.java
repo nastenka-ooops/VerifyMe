@@ -15,6 +15,7 @@ public class OpenApiConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .addServersItem(new Server().url("https://auth-project-production.up.railway.app"))
+                .addServersItem(new Server().url("http://localhost:8080"))
                 .info(new Info()
                         .title("Auth Project API")
                         .version("1.0")
