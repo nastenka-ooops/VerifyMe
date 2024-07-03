@@ -1,5 +1,6 @@
 package com.example.authproject.service;
 
+import com.example.authproject.dto.RegistrationRequest;
 import com.example.authproject.entity.AppUser;
 import com.example.authproject.exception.InvalidRegistrationRequestException;
 import org.springframework.security.core.Authentication;
@@ -21,13 +22,13 @@ public class TokenService {
         this.jwtDecoder = jwtDecoder;
     }
 
-    public String generateVerificationToken(AppUser user) {
+    public String generateVerificationToken(RegistrationRequest user) {
         Instant now = Instant.now();
         JwtClaimsSet claimsSet = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
                 .expiresAt(now.plus(3, ChronoUnit.MINUTES))
-                .subject(user.getEmail())
+                .subject(user.email())
                 .build();
         return jwtEncoder.encode(JwtEncoderParameters.from(claimsSet)).getTokenValue();
 

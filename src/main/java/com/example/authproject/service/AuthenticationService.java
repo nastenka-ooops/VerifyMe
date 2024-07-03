@@ -10,7 +10,6 @@ import com.example.authproject.exception.InvalidRegistrationRequestException;
 import com.example.authproject.exception.PasswordMismatchException;
 import com.example.authproject.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -36,22 +35,22 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final TokenService tokenService;
     private final UserService userService;
-    private final JavaMailSender mailSender;
+    private final MailService mailService;
+
 
     @Autowired
     public AuthenticationService(UserRepository userRepository, Validator validator, PasswordEncoder passwordEncoder,
-                                 AuthenticationManager authenticationManager, TokenService tokenService, UserService userService,
-                                 JavaMailSender mailSender) {
+                                 AuthenticationManager authenticationManager, TokenService tokenService, UserService userService, MailService mailService) {
         this.userRepository = userRepository;
         this.validator = validator;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
         this.userService = userService;
-        this.mailSender = mailSender;
+        this.mailService = mailService;
     }
 
-    public void createUser(RegistrationRequest registrationRequest, String url) {
+    public void createUser(RegistrationRequest registrationRequest) {
         validateRegistrationRequest(registrationRequest);
 
         if (emailExists(registrationRequest.email())) {
@@ -68,7 +67,7 @@ public class AuthenticationService {
 
         userRepository.save(user);
 
-        sendConfirmation(user, url);
+        mailService.sendConfirmation(registrationRequest);
     }
 
     public LoginResponse loginUser(LoginRequest loginRequest) {
@@ -95,22 +94,6 @@ public class AuthenticationService {
 
     public boolean emailExists(String email) {
         return userRepository.findByEmailIgnoreCase(email).isPresent();
-    }
-
-    public void sendConfirmation(AppUser user, String url) {
-
-            String token = tokenService.generateVerificationToken(user);
-
-            String subject = "Подтверждение регистрации";
-            String confirmationUrl = url + "/confirmation?token=" + token;
-            String message = "Чтобы подтвердить регистрацию, перейдите по следующей ссылке: " + confirmationUrl;
-
-            SimpleMailMessage email = new SimpleMailMessage();
-            email.setTo(user.getEmail());
-            email.setSubject(subject);
-            email.setText(message);
-
-            mailSender.send(email);
     }
 
     public String confirmEmail(String token) {

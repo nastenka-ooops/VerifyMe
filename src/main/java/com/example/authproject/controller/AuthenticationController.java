@@ -4,6 +4,7 @@ import com.example.authproject.dto.LoginRequest;
 import com.example.authproject.dto.LoginResponse;
 import com.example.authproject.dto.RegistrationRequest;
 import com.example.authproject.service.AuthenticationService;
+import com.example.authproject.service.MailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,10 +21,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @RequestMapping("/api/auth")
 public class AuthenticationController {
     private final AuthenticationService authenticationService;
+    private final MailService mailService;
 
     @Autowired
-    public AuthenticationController(AuthenticationService authenticationService) {
+    public AuthenticationController(AuthenticationService authenticationService, MailService mailService) {
         this.authenticationService = authenticationService;
+        this.mailService = mailService;
     }
 
     @Operation(summary = "Register a new user", description = "Registers a new user with the provided registration details.")
@@ -40,10 +43,7 @@ public class AuthenticationController {
             @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Registration request containing user details",
                     required = true,
                     content = @Content(schema = @Schema(implementation = RegistrationRequest.class))) RegistrationRequest registrationRequest) {
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        String url = attributes.getRequest().getRequestURL().toString();
-
-        authenticationService.createUser(registrationRequest, url);
+        authenticationService.createUser(registrationRequest);
         return ResponseEntity.ok("Registration successful");
     }
 
@@ -62,6 +62,22 @@ public class AuthenticationController {
             @Parameter(description = "Token for email confirmation", required = true)
             @RequestParam("token") String token) {
         return ResponseEntity.ok(authenticationService.confirmEmail(token));
+    }
+
+    @Operation(summary = "Resend Confirmation Email",
+            description = "Resends the confirmation email to the user's email address. " +
+                    "This endpoint should be used if the user did not receive the initial confirmation email or if the previous link has expired.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Resend confirmation email successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid request")
+    })
+    @PostMapping("/registration/resend-confirmation")
+    public ResponseEntity<String> resendConfirmEmail(
+            @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Registration request containing user details",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = RegistrationRequest.class))) RegistrationRequest registrationRequest) {
+        mailService.sendConfirmation(registrationRequest);
+        return ResponseEntity.ok("Resend confirmation email successful");
     }
 
     @Operation(summary = "User login", description = "Authenticate user and return a JWT token.")
