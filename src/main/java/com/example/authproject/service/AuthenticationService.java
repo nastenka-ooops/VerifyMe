@@ -54,16 +54,12 @@ public class AuthenticationService {
     public void createUser(RegistrationRequest registrationRequest) {
         validateRegistrationRequest(registrationRequest);
 
-        if (loginExists(registrationRequest.email())) {
+        if (loginExists(registrationRequest.login())) {
             throw new EmailAlreadyTakenException("Login is already taken");
         }
 
         if (emailExists(registrationRequest.email())) {
             throw new EmailAlreadyTakenException("Email is already taken");
-        }
-
-        if (!registrationRequest.password().equals(registrationRequest.confirmPassword())) {
-            throw new PasswordMismatchException("Passwords do not match");
         }
 
         AppUser user = new AppUser(registrationRequest.email(), registrationRequest.login(),
