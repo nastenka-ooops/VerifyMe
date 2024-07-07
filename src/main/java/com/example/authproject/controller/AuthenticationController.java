@@ -14,11 +14,15 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.tomcat.Jar;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+
+import java.net.http.HttpResponse;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -97,8 +101,15 @@ public class AuthenticationController {
                     content = @Content)
     })
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        return ResponseEntity.ok(authenticationService.loginUser(loginRequest));
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest, HttpServletResponse httpResponse) {
+        LoginResponse loginResponse = authenticationService.loginUser(loginRequest);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(
+                "refreshToken", loginResponse.refreshToken())
+                .build();
+
+        httpResponse.addHeader("Set-Cookie", refreshTokenCookie.toString());
+        return ResponseEntity.ok(loginResponse);
     }
 
     @Operation(summary = "Refresh Token", description = "Refreshes the JWT access token using a valid refresh token.")
