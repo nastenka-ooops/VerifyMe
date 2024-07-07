@@ -15,16 +15,13 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletResponse;
-import org.apache.tomcat.Jar;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,14 +29,13 @@ public class AuthenticationController {
     private final AuthenticationService authenticationService;
     private final TokenService tokenService;
     private final MailService mailService;
-    private final UserRepository userRepository;
 
     @Autowired
-    public AuthenticationController(AuthenticationService authenticationService, TokenService tokenService, MailService mailService, UserRepository userRepository) {
+    public AuthenticationController(AuthenticationService authenticationService, TokenService tokenService,
+                                    MailService mailService) {
         this.authenticationService = authenticationService;
         this.tokenService = tokenService;
         this.mailService = mailService;
-        this.userRepository = userRepository;
     }
 
     @Operation(summary = "Register a new user", description = "Registers a new user with the provided registration details.")
@@ -123,7 +119,7 @@ public class AuthenticationController {
         LoginResponse loginResponse = authenticationService.loginUser(loginRequest);
 
         ResponseCookie refreshTokenCookie = ResponseCookie.from(
-                "refreshToken", loginResponse.refreshToken())
+                        "refreshToken", loginResponse.refreshToken())
                 .build();
 
         httpResponse.addHeader("Set-Cookie", refreshTokenCookie.toString());
@@ -164,4 +160,16 @@ public class AuthenticationController {
     public ResponseEntity<String> updatePassword(@RequestParam("token") String token,
                                                  @RequestBody PasswordUpdateRequest request) {
         return ResponseEntity.ok(authenticationService.updatePassword(token, request));
-    }}
+    }
+
+    @Operation(summary = "Logout endpoint", description = "Clears the security context to log the user out.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful")
+    })
+    @GetMapping("/logout")
+    public ResponseEntity<String> logout() {
+        SecurityContextHolder.clearContext();
+
+        return ResponseEntity.ok("Logout successful");
+    }
+}
