@@ -97,19 +97,23 @@ public class AuthenticationService {
         return userRepository.findByLoginIgnoreCase(login).isPresent();
     }
 
-    public String confirmEmail(String token) {
+    public LoginResponse confirmEmail(String token) {
         Jwt decodedToken = tokenService.decodeToken(token);
         if (decodedToken != null) {
             String email = decodedToken.getSubject();
             AppUser user = userService.findByEmail(email);
             if (user != null && !user.getIsConfirm()) {
                 userService.confirmUser(user);
-                return "Registration confirmed! You can now log in.";
+
+                String accessToken = tokenService.generateAccessToken(user);
+                String refreshToken = tokenService.generateRefreshToken(user);
+
+                return new LoginResponse(user.getLogin(), accessToken, refreshToken);
             } else {
-                return "The user was not found or has already been verified.";
+                throw new EmailAlreadyTakenException("The user was not found or has already been verified.");
             }
         } else {
-            return "Invalid or expired token.";
+            throw new InvalidRegistrationRequestException("Invalid or expired token.");
         }
     }
 
@@ -124,7 +128,7 @@ public class AuthenticationService {
 
     public void forgotPassword(String email) {
         Optional<AppUser> user = userRepository.findByEmailIgnoreCase(email);
-        if(user.isEmpty()){
+        if (user.isEmpty()) {
             throw new UsernameNotFoundException("Email address not found.");
         }
 
@@ -134,7 +138,7 @@ public class AuthenticationService {
     public String updatePassword(String token, PasswordUpdateRequest request) {
         Jwt decodedToken = tokenService.decodeToken(token);
 
-        if (!request.password().equals(request.confirmPassword())){
+        if (!request.password().equals(request.confirmPassword())) {
             throw new PasswordMismatchException("Passwords do not match");
         }
 

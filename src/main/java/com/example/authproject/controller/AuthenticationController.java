@@ -17,11 +17,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.tomcat.Jar;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.net.http.HttpResponse;
 
 @RestController
@@ -69,10 +71,26 @@ public class AuthenticationController {
             @ApiResponse(responseCode = "404", description = "User not found", content = @Content(mediaType = "text/plain"))
     })
     @GetMapping("/registration/confirmation")
-    public ResponseEntity<String> confirmEmail(
+    public ResponseEntity<LoginResponse> confirmEmail(
             @Parameter(description = "Token for email confirmation", required = true)
-            @RequestParam("token") String token) {
-        return ResponseEntity.ok(authenticationService.confirmEmail(token));
+            @RequestParam("token") String token,
+            HttpServletResponse httpResponse) {
+        LoginResponse loginResponse = authenticationService.confirmEmail(token);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(
+                        "refreshToken", loginResponse.refreshToken())
+                .build();
+
+        httpResponse.addHeader("Set-Cookie", refreshTokenCookie.toString());
+
+        String redirectUrl = "https://dev--lorbystudy.netlify.app/welcome?accessToken=" + loginResponse.accessToken()
+                + "&refreshToken=" + loginResponse.refreshToken();
+        try {
+            httpResponse.sendRedirect(redirectUrl);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok(loginResponse);
     }
 
     @Operation(summary = "Resend Confirmation Email",
