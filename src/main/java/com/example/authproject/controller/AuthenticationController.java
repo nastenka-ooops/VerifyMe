@@ -8,6 +8,7 @@ import com.example.authproject.repository.UserRepository;
 import com.example.authproject.service.AuthenticationService;
 import com.example.authproject.service.MailService;
 import com.example.authproject.service.TokenService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -172,4 +173,39 @@ public class AuthenticationController {
 
         return ResponseEntity.ok("Logout successful");
     }
+
+    @Hidden
+    @GetMapping("/registration/test/confirmation")
+    public ResponseEntity<LoginResponse> confirmEmailTest(
+            @Parameter(description = "Token for email confirmation", required = true)
+            @RequestParam("token") String token,
+            HttpServletResponse httpResponse) {
+        LoginResponse loginResponse = authenticationService.confirmEmail(token);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(
+                        "refreshToken", loginResponse.refreshToken())
+                .build();
+
+        httpResponse.addHeader("Set-Cookie", refreshTokenCookie.toString());
+
+        String redirectUrl = "http://localhost:3000/welcome?accessToken=" + loginResponse.accessToken()
+                + "&refreshToken=" + loginResponse.refreshToken();
+        try {
+            httpResponse.sendRedirect(redirectUrl);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return ResponseEntity.ok(loginResponse);
+    }
+
+    @Hidden
+    @PostMapping("/registration/test")
+    public ResponseEntity<String> registrationTest(
+            @RequestBody @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Registration request containing user details",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = RegistrationRequest.class))) RegistrationRequest registrationRequest) {
+        authenticationService.createUser(registrationRequest);
+        return ResponseEntity.ok("Registration successful");
+    }
+
 }

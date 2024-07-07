@@ -26,3 +26,15 @@ create table user_role_junction
     constraint user_role_junction_pk
         primary key (user_id, role_id)
 );
+create table refresh_token
+(
+    id          bigint generated always as identity
+        constraint verification_token_pk
+            primary key,
+    token       varchar   not null,
+    user_id     bigint    not null
+        constraint user_id_fk
+            references app_user
+            on delete cascade,
+    expiry_date timestamp not null
+);

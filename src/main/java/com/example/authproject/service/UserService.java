@@ -38,4 +38,8 @@ public class UserService implements UserDetailsService {
         user.setIsConfirm(true);
         userRepository.save(user);
     }
+
+    public void deleteAllUsers(){
+        userRepository.deleteAll();
+    }
 }

@@ -2,16 +2,13 @@ package com.example.authproject.controller;
 
 import com.example.authproject.dto.UserDto;
 import com.example.authproject.service.UserService;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
@@ -32,5 +29,13 @@ public class UserController {
             @Parameter(description = "Username of the user to fetch", required = true)
             @RequestParam("username") String username) {
         return ResponseEntity.ok(userService.getUser(username));
+    }
+
+    @Hidden
+    @DeleteMapping("/delete-all")
+    public ResponseEntity<String> clearUsers() {
+        userService.deleteAllUsers();
+
+        return ResponseEntity.ok("All users deleted successfully");
     }
 }
